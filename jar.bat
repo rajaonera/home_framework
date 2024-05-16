@@ -20,12 +20,25 @@ set "src=%dossier_temp%\*.java"
 set "mainPkg=mg"
 set "archive=%projet%.jar"
 
+:: Configuration
+set "lib_dir=lib"
+set "dossier_temp=out"
+@REM set "src=src/**/*.java"
+
+:: Construction du classpath avec tous les .jar du dossier lib
+set "classpath="
+for %%f in (%lib_dir%\*.jar) do (
+    set "classpath=!classpath!;%%f"
+)
+
 :: Compilation
-javac -g -d "%dossier_temp%" %src%
+javac -g -cp "!classpath!" -d "%dossier_temp%" %src%
 if errorlevel 1 (
     echo Échec de la compilation
     exit /b 1
 )
+
+echo Compilation réussie.
 
 :: Création du .jar
 cd %dossier_temp%
