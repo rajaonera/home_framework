@@ -51,7 +51,7 @@ cd ..
 copy /Y "%dossier_temp%\%archive%" "%dossier_principal%"
 
 :: Copie dans dossier de test
-set "destination=..\Test\lib\"
+set "destination=..\tests\WEB-INF\lib\"
 if exist "%destination%%archive%" (
     del /Q "%destination%%archive%"
 )
