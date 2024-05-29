@@ -8,7 +8,7 @@ REM Nom du war
 set "WAR_NAME=test-webapp.war"
 
 REM Chemin Tomcat webapps
-set "CATALINA_HOME=C:\xampp\tomcat"
+set "CATALINA_HOME=C:\Program Files\Apache Software Foundation\Tomcat 9.0"
 set "TOMCAT_WEBAPPS=%CATALINA_HOME%\webapps"
 
 REM Nettoyer ancien WAR et dossier déployé

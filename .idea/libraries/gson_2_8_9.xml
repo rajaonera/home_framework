@@ -5,6 +5,7 @@
       <root url="jar://$PROJECT_DIR$/lib/paranamer-2.8.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/servlet-api.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/javax.servlet-3.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/sprint02.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
