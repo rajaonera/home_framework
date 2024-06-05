@@ -40,4 +40,7 @@ public class Utils {
         return new ArrayList<Method>(Arrays.asList(declaredMethods));
     }
 
+    public static Object executeSimpleMethod(Object obj, String methodName) throws Exception {
+        return obj.getClass().getMethod(methodName).invoke(obj);
+    }
 }

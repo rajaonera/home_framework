@@ -10,6 +10,7 @@ import java.util.HashMap;
 
 import mg.framework.models.Mapping;
 import mg.framework.utils.ServletManager;
+import mg.framework.utils.Utils;
 
 public class FrontController  extends HttpServlet{
     
@@ -32,14 +33,16 @@ public class FrontController  extends HttpServlet{
         String url =  request.getRequestURI();
         out.println("URL : " + url);
         this.showMappingsUrlsAndMethods(out,url);
+        this.executeMethodController(out, url);
     }
 
-    public HashMap<String, Mapping> setMappingUrls() {
+    public HashMap<String, Mapping> getMappingUrls() {
         return mappingUrls;
     }
     public void getMappingUrls(HashMap<String, Mapping> mappingUrl) {
         this.mappingUrls = mappingUrl;
     }
+
     public void setMappingUrls(String url, Mapping method) {
         this.mappingUrls.put(url, method);
     }
@@ -56,17 +59,15 @@ public class FrontController  extends HttpServlet{
     public void init() {
         this.initController();
         try {
-            HashMap<String,Mapping> map = ServletManager.getControllerMethod(this.getClassController(),this.setMappingUrls());
-            if (map == null) {
-                throw new Exception("Duplicate annotation in multiple methods!");
-            }
+            ServletManager.getControllerMethod(this.getClassController(),this.getMappingUrls());
+                
         } catch (Exception e) {
             System.out.println(e.getLocalizedMessage());
         }
     }
 
     public void showMappingsUrlsAndMethods(PrintWriter out, String url) {
-        Mapping map = ServletManager.getUrl(this.setMappingUrls(), url);
+        Mapping map = ServletManager.getUrl(this.getMappingUrls(), url);
         try {
             if (map != null) {
                 out.println("Controller Name : " + map.getClassName());
@@ -78,6 +79,30 @@ public class FrontController  extends HttpServlet{
             out.println(e.getMessage());
         }
     }
+
+    public void executeMethodController(PrintWriter out, String url) throws IOException {
+        String packageCtrl = this.getInitParameter("packageName");
+        Mapping map = ServletManager.getUrl(this.getMappingUrls(), url);
+        try {
+            if (map != null) {
+                String className = map.getClassName();
+                String methodName = map.getMethodName();
+                String classPath = packageCtrl+"."+className;
+
+                Class<?> controllerClass = Class.forName(classPath);
+                Object ctrlObj = controllerClass.newInstance(); 
+                String methodReturn =  (String) Utils.executeSimpleMethod(ctrlObj, methodName);
+                
+                out.print("After executing the "+ methodName +" method in the "+ className +" Class, this method returned the value: ");
+                out.println(methodReturn); 
+
+            } else {
+                out.println("No method found!");
+            }
+        } catch (Exception e) {
+            out.println("Error : " + e.getMessage());
+        }
+    } 
 
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException{
