@@ -23,7 +23,7 @@ public class ServletManager {
         return result;
     }
 
-    public static HashMap<String, Mapping> getControllerMethod(ArrayList<Class<?>> classes, HashMap<String,Mapping> controllerAndMethod) throws Exception {
+    public static void getControllerMethod(ArrayList<Class<?>> classes,HashMap<String,Mapping>urlsHashMap) throws Exception {
         HashMap<String, Mapping> result = new HashMap<String, Mapping>();
         if (classes != null) {
             for(Class<?> classe : classes) {
@@ -31,17 +31,16 @@ public class ServletManager {
                 for (Method method : methods) {
                     if (method.isAnnotationPresent(Get.class)) {
                         String url = ( method.getAnnotation(Get.class)).value();
-                        if (controllerAndMethod.get(url)==null) {
+                        if (urlsHashMap.get(url)==null) {
                             Mapping mapping = new Mapping(classe.getSimpleName(),method.getName());
-                            controllerAndMethod.put(url, mapping);
+                            urlsHashMap.put(url, mapping);
                         } else {
-                            result = null;
+                            throw new Exception("Duplicate annotation : "+ url +" in multiple methods!");
                         }
                     }
                 }
             }
         }
-        return result;
     }
 
     public static Mapping getUrl(HashMap<String, Mapping> maps, String url) {
