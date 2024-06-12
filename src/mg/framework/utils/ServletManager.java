@@ -26,7 +26,7 @@ public class ServletManager {
     public static void getControllerMethod(ArrayList<Class<?>> classes,HashMap<String,Mapping>urlsHashMap) throws Exception {
         if (classes != null) {
             for(Class<?> classe : classes) {
-                ArrayList<Method> methods = Utils.getClassMethod(classe);
+                ArrayList<Method> methods = Utils.getListMethod(classe);
                 for (Method method : methods) {
                     if (method.isAnnotationPresent(Get.class)) {
                         String url = ( method.getAnnotation(Get.class)).value();
