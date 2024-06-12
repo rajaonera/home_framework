@@ -24,7 +24,6 @@ public class ServletManager {
     }
 
     public static void getControllerMethod(ArrayList<Class<?>> classes,HashMap<String,Mapping>urlsHashMap) throws Exception {
-        HashMap<String, Mapping> result = new HashMap<String, Mapping>();
         if (classes != null) {
             for(Class<?> classe : classes) {
                 ArrayList<Method> methods = Utils.getClassMethod(classe);
