@@ -35,10 +35,19 @@ public class Utils {
         return classes;
     }
 
-    public static ArrayList<Method> getClassMethod(Class<?> classes) throws Exception {
+    public static ArrayList<Method> getListMethod(Class<?> classes) throws Exception {
+        ArrayList<Method> result = new ArrayList<Method>();
         Method[] declaredMethods = classes.getDeclaredMethods();
-        return new ArrayList<Method>(Arrays.asList(declaredMethods));
+        for (Method method : declaredMethods) {
+            result.add(method);
+        }
+        return result;
     }
+
+    public static Method getMethod(Class<?> classe, String methodName) throws Exception {
+        return classe.getDeclaredMethod(methodName);
+    }
+
 
     public static Object executeSimpleMethod(Object obj, String methodName) throws Exception {
         return obj.getClass().getMethod(methodName).invoke(obj);
