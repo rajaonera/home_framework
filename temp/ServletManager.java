@@ -1,10 +1,14 @@
 package mg.framework.utils;
 
+import java.lang.annotation.Annotation;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.RequestDispatcher;
@@ -13,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import mg.framework.annotations.Controller;
 import mg.framework.annotations.Get;
+import mg.framework.annotations.RequestParam;
 import mg.framework.exception.DuplicateException;
 import mg.framework.exception.PackageException;
 import mg.framework.exception.ReturnException;
@@ -119,4 +124,59 @@ public class ServletManager {
         RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher("/"+modelView.getUrl());
         dispatcher.forward(request,response);
     }
+
+    
+    public static void executeMethod (String packageCtrl, Mapping map, HttpServletRequest request, HttpServletResponse response) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException , Exception {
+        PrintWriter out = response.getWriter();
+        
+        Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
+        Method method = Utils.getMethodAnnotedGet(clazz,map.getMethodName());
+        
+        if (method.getReturnType() == String.class || method.getReturnType() == ModelView.class){
+            Object object = clazz.newInstance();
+            List<Object> MethodParameters = new ArrayList<>();
+            if (method.getParameters().length > 0) {
+                MethodParameters = preparedParameter(object, method,request,response);
+                if (MethodParameters.size() != method.getParameters().length){
+                    throw new Exception("Parameters number is insufficient!");
+                }
+            }
+            if (method.getReturnType() == String.class){
+                out.println("Executed methods : "+ method.invoke(object, MethodParameters.toArray(new Object[]{})).toString());
+            }
+            if (method.getReturnType() == ModelView.class){
+                dispatchModelView((ModelView) method.invoke(object,MethodParameters.toArray(new Object[]{})), request, response);
+            }
+        }
+
+        else {
+            throw new Exception("The return type of the method "+ method.getName() +" in "+clazz.getName()+".class is invalid!");
+        }
+    }
+
+    public static List<Object> preparedParameter(Object obj, Method method, HttpServletRequest request, HttpServletResponse response) throws InvocationTargetException, IllegalAccessException, IOException {
+        Parameter[] parameter = method.getParameters();
+        List<Object> result = new ArrayList<>();
+
+        for (int i = 0; i < parameter.length; i++){
+            Annotation argumentAnnotation = parameter[i].getAnnotation(RequestParam.class);
+            String name_annotation = "";
+            if(argumentAnnotation != null){
+                name_annotation = ((RequestParam) argumentAnnotation).value();
+            }
+            String realName = null;
+            if (request.getParameter(name_annotation) != null){
+                realName = name_annotation;
+            }
+            if (request.getParameter(parameter[i].getName()) != null){
+                realName = parameter[i].getName();
+            }
+            if(realName != null){
+                result.add(request.getParameter(realName));
+            }
+
+        }
+        return result;
+    }
+
 }

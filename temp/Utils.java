@@ -6,6 +6,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import mg.framework.annotations.Get;
+
 public class Utils {
     public static String getFileName(String fileName, String extension) {
         return fileName.substring(0, (fileName.length() - extension.length()) - 1);
@@ -43,10 +45,20 @@ public class Utils {
         return result;
     }
 
+    public static Method getMethodAnnotedGet(Class<?> clazz,String methodName){
+        Method [] methods = clazz.getDeclaredMethods();
+        Method result = null;
+        for (int i=0;i < methods.length;i++){
+            if (methods[i].isAnnotationPresent(Get.class) && methods[i].getName().compareTo(methodName)==0) {
+                result=methods[i];
+            }
+        }
+        return result;
+    }
+
     public static Method getMethod(Class<?> classe, String methodName) throws Exception {
         return classe.getDeclaredMethod(methodName);
     }
-
 
     public static Object executeSimpleMethod(Object obj, String methodName) throws Exception {
         return obj.getClass().getMethod(methodName).invoke(obj);
