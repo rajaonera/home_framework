@@ -11,6 +11,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.thoughtworks.paranamer.AdaptiveParanamer;
+import com.thoughtworks.paranamer.Paranamer;
+import java.lang.reflect.Field;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +27,6 @@ import mg.framework.exception.ReturnException;
 import mg.framework.exception.UrlNotFoundException;
 import mg.framework.models.Mapping;
 import mg.framework.models.ModelView;
-
 
 @SuppressWarnings("deprecation")
 public class ServletManager {
@@ -130,8 +132,8 @@ public class ServletManager {
         PrintWriter out = response.getWriter();
         
         Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
-        Method method = Utils.getMethodAnnotedGet(clazz,map.getMethodName());
-        
+        Method method= Utils.getMethodAnnotedGet(clazz,map.getMethodName());
+
         if (method.getReturnType() == String.class || method.getReturnType() == ModelView.class){
             Object object = clazz.newInstance();
             List<Object> MethodParameters = new ArrayList<>();
@@ -142,10 +144,10 @@ public class ServletManager {
                 }
             }
             if (method.getReturnType() == String.class){
-                out.println("Executed methods : "+ method.invoke(object, MethodParameters.toArray(new Object[]{})).toString());
+                out.println("Method return : "+ method.invoke(object, MethodParameters.toArray(new Object[]{})).toString());
             }
             if (method.getReturnType() == ModelView.class){
-                dispatchModelView((ModelView) method.invoke(object,MethodParameters.toArray(new Object[]{})), request, response);
+                dispatchModelView((ModelView) method.invoke(object, MethodParameters.toArray(new Object[]{})), request, response);
             }
         }
 
@@ -154,29 +156,49 @@ public class ServletManager {
         }
     }
 
-    public static List<Object> preparedParameter(Object obj, Method method, HttpServletRequest request, HttpServletResponse response) throws InvocationTargetException, IllegalAccessException, IOException {
-        Parameter[] parameter = method.getParameters();
+    public static List<Object> preparedParameter(Object obj, Method method, HttpServletRequest request, HttpServletResponse response) throws Exception {
         List<Object> result = new ArrayList<>();
+        Parameter [] parameters = method.getParameters();
+        String [] parameterName = getParameterName(method);
 
-        for (int i = 0; i < parameter.length; i++){
-            Annotation argumentAnnotation = parameter[i].getAnnotation(RequestParam.class);
-            String name_annotation = "";
-            if(argumentAnnotation != null){
-                name_annotation = ((RequestParam) argumentAnnotation).value();
+        for (int i = 0 ; i < parameters.length; i++){
+            Annotation argumentAnnotation = parameters[i].getAnnotation(RequestParam.class);
+            String arguentName = parameterName[i];
+            if (argumentAnnotation != null){
+                arguentName = ((RequestParam) argumentAnnotation).value();
             }
-            String realName = null;
-            if (request.getParameter(name_annotation) != null){
-                realName = name_annotation;
+            Class<?> clazz = parameters[i].getType();
+            if (Utils.isObject(clazz)){
+                Object o = clazz.newInstance();
+                result.add(prepareObject(arguentName,o,request));
             }
-            if (request.getParameter(parameter[i].getName()) != null){
-                realName = parameter[i].getName();
+            else {
+                if(request.getParameter(arguentName)!=null){
+                    result.add(Utils.castValue(request.getParameter(arguentName),parameters[i].getType()));
+                }
             }
-            if(realName != null){
-                result.add(request.getParameter(realName));
-            }
-
         }
+
         return result;
+    }
+
+    public static String [] getParameterName(Method method){
+        Paranamer paranamer = new AdaptiveParanamer();
+        String [] parameterName = paranamer.lookupParameterNames(method);
+        return  parameterName;
+    }
+
+    public static Object prepareObject (String name,Object obj, HttpServletRequest request) throws Exception {
+        Field[] attributs = obj.getClass().getDeclaredFields();
+        for (Field attr : attributs){
+            String method_name = "set"+Utils.toUpperCase(attr.getName());
+            Method method = obj.getClass().getDeclaredMethod(method_name,attr.getType());
+            String input_name = name+":"+attr.getName();
+            if(request.getParameter(input_name)!=null){
+                method.invoke(obj,Utils.castValue(request.getParameter(input_name),attr.getType()));
+            }
+        }
+        return obj;
     }
 
 }
