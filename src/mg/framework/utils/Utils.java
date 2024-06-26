@@ -5,8 +5,10 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.sql.Date;
 
 import mg.framework.annotations.Get;
+import mg.framework.exception.CastException;
 
 public class Utils {
     public static String getFileName(String fileName, String extension) {
@@ -63,4 +65,53 @@ public class Utils {
     public static Object executeSimpleMethod(Object obj, String methodName) throws Exception {
         return obj.getClass().getMethod(methodName).invoke(obj);
     }
+        public static String toUpperCase(String word) {
+        return word.substring(0,1).toUpperCase() + word.substring(1);
+    }
+
+    public static boolean isObject(Class<?> clazz){
+        if(clazz == String.class){
+            return false;
+        }
+        if(clazz == Integer.class){
+            return false;
+        }
+        if(clazz == Double.class){
+            return false;
+        }
+        if(clazz == Date.class){
+            return false;
+        }
+        return true;
+    }
+
+    public static Object castValue(String value,Class<?> clazz) throws Exception{
+        Object result = null;
+        if(clazz == String.class){
+            result = value;
+        }
+        if(clazz == Integer.class){
+           try {
+                result = Integer.valueOf(value);
+           } catch(RuntimeException e) {
+                throw new CastException("Can't cast Text to Integer!");
+           }
+        }
+        if(clazz == Double.class){
+            try {
+                result = Double.valueOf(value);
+            } catch (RuntimeException e) {
+                throw new CastException("Can't cast Text to Double!");
+            }
+        }
+        if(clazz == Date.class){
+            try {
+                result = Date.valueOf(value);
+            } catch (RuntimeException e) {
+                throw new CastException("Can't cast Text to Date!");
+            }
+        } 
+        return result;
+    }
+
 }
