@@ -11,6 +11,9 @@ public class ModelView {
         this.url = url;
         this.data = data;
     }
+    public ModelView(String url) {
+        this.url = url;
+    }
 
     public String getUrl() {
         return url;
