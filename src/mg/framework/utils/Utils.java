@@ -8,6 +8,8 @@ import java.util.Objects;
 import java.sql.Date;
 
 import mg.framework.annotations.Get;
+import mg.framework.annotations.Post;
+import mg.framework.annotations.Url;
 import mg.framework.exception.CastException;
 
 public class Utils {
@@ -47,11 +49,11 @@ public class Utils {
         return result;
     }
 
-    public static Method getMethodAnnotedGet(Class<?> clazz,String methodName){
+    public static Method getMethodAnnoted(Class<?> clazz, String methodName){
         Method [] methods = clazz.getDeclaredMethods();
         Method result = null;
         for (int i=0;i < methods.length;i++){
-            if (methods[i].isAnnotationPresent(Get.class) && methods[i].getName().compareTo(methodName)==0) {
+            if (methods[i].isAnnotationPresent(Url.class) && methods[i].getName().compareTo(methodName)==0) {
                 result=methods[i];
             }
         }
@@ -113,5 +115,15 @@ public class Utils {
         } 
         return result;
     }
-
+    
+    public static String getVerb(Method method) {
+        String verb = "Get";
+        if (method.isAnnotationPresent(Get.class)) {
+            verb = "Get";
+        }
+        if (method.isAnnotationPresent(Post.class)) {
+            verb = "Post";
+        }
+        return verb;
+    }
 }

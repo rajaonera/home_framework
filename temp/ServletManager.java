@@ -20,7 +20,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import mg.framework.annotations.Controller;
-import mg.framework.annotations.Get;
+import mg.framework.annotations.Url;
 import mg.framework.annotations.RequestParam;
 import mg.framework.annotations.RestAPI;
 import mg.framework.exception.DuplicateException;
@@ -48,16 +48,18 @@ public class ServletManager {
         return result;
     }
 
+
     public static HashMap<String,Mapping> getControllerMethod(ArrayList<Class<?>> classes) throws Exception {
         HashMap<String,Mapping> result = new HashMap<>();
         if (classes != null) {
             for(Class<?> classe : classes) {
                 ArrayList<Method> methods = Utils.getListMethod(classe);
                 for (Method method : methods) {
-                    if (method.isAnnotationPresent(Get.class)) {
-                        String url = ((Get) method.getAnnotation(Get.class)).value();
+                    if (method.isAnnotationPresent(Url.class)) {
+                        String url = ((Url) method.getAnnotation(Url.class)).value();
                         if (result.get(url)==null) {
-                            Mapping mapping = new Mapping(classe.getSimpleName(),method.getName());
+                            String verb = Utils.getVerb(method);
+                            Mapping mapping = new Mapping(classe.getSimpleName(),method.getName(), verb);
                             result.put(url, mapping);
                         } else {
                             throw new DuplicateException();
@@ -169,7 +171,7 @@ public class ServletManager {
         PrintWriter out = response.getWriter();
         
         Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
-        Method method = Utils.getMethodAnnotedGet(clazz,map.getMethodName());
+        Method method = Utils.getMethodAnnoted(clazz, map.getMethodName());
         Object object = clazz.newInstance();
         addSession(object, request);
         
@@ -190,7 +192,7 @@ public class ServletManager {
             if (method.getReturnType() == String.class){
                 out.println("Method return : "+ method.invoke(object, methodParameters.toArray(new Object[]{})).toString());
             }
-            if (method.getReturnType() == ModelView.class){
+            else if (method.getReturnType() == ModelView.class){
                 dispatchModelView((ModelView) method.invoke(object, methodParameters.toArray(new Object[]{})), request, response);
             }
     
