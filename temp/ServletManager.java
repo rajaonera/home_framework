@@ -56,13 +56,22 @@ public class ServletManager {
                 ArrayList<Method> methods = Utils.getListMethod(classe);
                 for (Method method : methods) {
                     if (method.isAnnotationPresent(Url.class)) {
+                        String verb = Utils.getVerb(method);
+
                         String url = ((Url) method.getAnnotation(Url.class)).value();
-                        if (result.get(url)==null) {
-                            String verb = Utils.getVerb(method);
-                            Mapping mapping = new Mapping(classe.getSimpleName(),method.getName(), verb);
+                        Mapping map = result.get(url);
+                        
+                        if (map == null) {
+                            Mapping mapping = new Mapping(classe.getSimpleName());
+                            mapping.addVerbAction(new VerbAction(method.getName(), verb));
                             result.put(url, mapping);
                         } else {
-                            throw new DuplicateException();
+                            VerbAction verbAction = new VerbAction(method.getName(), verb);
+                            if (!Utils.isVerbExistInMapping(map, verbAction)) {
+                                map.addVerbAction(verbAction);
+                            } else {
+                                throw new DuplicateException();
+                            }
                         }
                     }
                 }
@@ -109,14 +118,14 @@ public class ServletManager {
     }
 
 
-    public static void executeMethodController(String url, HttpServletRequest request, HttpServletResponse response, String packageName, HashMap<String,Mapping> controllerAndMethod) throws Exception {
+    public static void executeMethodController(String url, VerbAction verbAction,HttpServletRequest request, HttpServletResponse response, String packageName, HashMap<String,Mapping> controllerAndMethod) throws Exception {
         PrintWriter out = response.getWriter();        
         Mapping map = ServletManager.getUrl(controllerAndMethod, url);
 
         String className = map.getClassName();
-        String methodName = map.getMethodName();
-        String classPath = packageName+"."+className;
-        
+        String methodName = verbAction.getMethod();
+        String classPath = packageName + "." + className;
+                
         Class<?> controllerClass = Class.forName(classPath);
         Method controllerMethod = Utils.getMethod(controllerClass, methodName);
 
@@ -167,13 +176,14 @@ public class ServletManager {
         }
     }
 
-    public static void executeMethod (String packageCtrl, Mapping map, HttpServletRequest request, HttpServletResponse response) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException , Exception {
+    public static void executeMethod (String packageCtrl, Mapping map, VerbAction verbAction, HttpServletRequest request, HttpServletResponse response) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException , Exception {
         PrintWriter out = response.getWriter();
         
         Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
-        Method method = Utils.getMethodAnnoted(clazz, map.getMethodName());
+        Method method = Utils.getMethodAnnoted(clazz, verbAction.getMethod());
         Object object = clazz.newInstance();
         addSession(object, request);
+        
         
         List<Object> methodParameters = new ArrayList<>();
 

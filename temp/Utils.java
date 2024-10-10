@@ -11,6 +11,7 @@ import mg.framework.annotations.Get;
 import mg.framework.annotations.Post;
 import mg.framework.annotations.Url;
 import mg.framework.exception.CastException;
+import mg.framework.models.Mapping;
 
 public class Utils {
     public static String getFileName(String fileName, String extension) {
@@ -125,5 +126,24 @@ public class Utils {
             verb = "Post";
         }
         return verb;
+    }
+
+    public static boolean isVerbExistInMapping(Mapping map, VerbAction verbAction) {
+        for (VerbAction verb : map.getVerbAction()) {
+            if (verb.getVerb().compareToIgnoreCase(verbAction.getVerb()) == 0) {
+                return true;
+            }
+        }
+        return false;
+    } 
+
+    public static VerbAction checkUrlMethod(Mapping mapping, String verb) {
+        VerbAction verbAction = null;
+        for (VerbAction va : mapping.getVerbAction()) {
+            if (va.getVerb().compareToIgnoreCase(verb) == 0) {
+                verbAction = va;
+            }
+        }
+        return verbAction;
     }
 }
