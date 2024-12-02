@@ -1,10 +1,10 @@
 package mg.framework.utils;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.sql.Date;
 
 import mg.framework.annotations.Get;
@@ -17,8 +17,8 @@ public class Utils {
     public static String getFileName(String fileName, String extension) {
         return fileName.substring(0, (fileName.length() - extension.length()) - 1);
     }
-
-    public static ArrayList<Class<?>> getClasses(String packageName) throws ClassNotFoundException{
+    
+    public static ArrayList<Class<?>> getClasses(String packageName) throws ClassNotFoundException, IOException {
         ArrayList<Class<?>> classes = new ArrayList<>();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         String path = packageName.replace('.', '/');
@@ -28,8 +28,8 @@ public class Utils {
             return classes;
         }
         File packageDirectory = new File(resource.getFile().replace("%20", " "));
-
-        for (File file : Objects.requireNonNull(packageDirectory.listFiles())) {
+        
+        for (File file : packageDirectory.listFiles()) {
             if (file.isDirectory()) {
                 classes.addAll(Utils.getClasses(packageName + "." + file.getName()));
             } else {
@@ -37,7 +37,7 @@ public class Utils {
                 classes.add(Class.forName(className));
             }
         }
-
+        
         return classes;
     }
 
@@ -48,6 +48,10 @@ public class Utils {
             result.add(method);
         }
         return result;
+    }
+
+    public static Method getMethod(Class<?> classe, String methodName) throws Exception {
+        return classe.getDeclaredMethod(methodName);
     }
 
     public static Method getMethodAnnoted(Class<?> clazz, String methodName){
@@ -61,14 +65,11 @@ public class Utils {
         return result;
     }
 
-    public static Method getMethod(Class<?> classe, String methodName) throws Exception {
-        return classe.getDeclaredMethod(methodName);
-    }
-
     public static Object executeSimpleMethod(Object obj, String methodName) throws Exception {
         return obj.getClass().getMethod(methodName).invoke(obj);
     }
-        public static String toUpperCase(String word) {
+
+    public static String toUpperCase(String word) {
         return word.substring(0,1).toUpperCase() + word.substring(1);
     }
 
@@ -88,19 +89,19 @@ public class Utils {
         return true;
     }
 
-    public static Object castValue(String value,Class<?> clazz) throws Exception{
+    public static Object castValue(String value, Class<?> clazz) throws Exception{
         Object result = null;
         if(clazz == String.class){
             result = value;
         }
-        if(clazz == Integer.class){
+        if(clazz == Integer.class || clazz == int.class){
            try {
                 result = Integer.valueOf(value);
            } catch(RuntimeException e) {
                 throw new CastException("Can't cast Text to Integer!");
            }
         }
-        if(clazz == Double.class){
+        if(clazz == Double.class || clazz == double.class){
             try {
                 result = Double.valueOf(value);
             } catch (RuntimeException e) {
@@ -116,7 +117,7 @@ public class Utils {
         } 
         return result;
     }
-    
+
     public static String getVerb(Method method) {
         String verb = "Get";
         if (method.isAnnotationPresent(Get.class)) {
@@ -145,5 +146,20 @@ public class Utils {
             }
         }
         return verbAction;
+    }
+
+    public static boolean isNumeric(String value) {
+        return value.matches("-?\\d+(\\.\\d+)?");
+    }
+
+    public static boolean isDate(String value) {
+        boolean result = false;
+        try {
+            java.sql.Date.valueOf(value);
+            result = true;
+        }catch (RuntimeException e){
+            result = false;
+        }
+        return result;
     }
 }

@@ -19,6 +19,7 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import mg.framework.annotations.Controller;
 import mg.framework.annotations.Url;
 import mg.framework.annotations.RequestParam;
@@ -30,6 +31,7 @@ import mg.framework.exception.UrlNotFoundException;
 import mg.framework.models.Mapping;
 import mg.framework.models.ModelView;
 import mg.framework.models.Session;
+
 
 @SuppressWarnings("deprecation")
 public class ServletManager {
@@ -47,7 +49,6 @@ public class ServletManager {
         }
         return result;
     }
-
 
     public static HashMap<String,Mapping> getControllerMethod(ArrayList<Class<?>> classes) throws Exception {
         HashMap<String,Mapping> result = new HashMap<>();
@@ -117,7 +118,6 @@ public class ServletManager {
         }
     }
 
-
     public static void executeMethodController(String url, VerbAction verbAction,HttpServletRequest request, HttpServletResponse response, String packageName, HashMap<String,Mapping> controllerAndMethod) throws Exception {
         PrintWriter out = response.getWriter();        
         Mapping map = ServletManager.getUrl(controllerAndMethod, url);
@@ -125,7 +125,7 @@ public class ServletManager {
         String className = map.getClassName();
         String methodName = verbAction.getMethod();
         String classPath = packageName + "." + className;
-                
+        
         Class<?> controllerClass = Class.forName(classPath);
         Method controllerMethod = Utils.getMethod(controllerClass, methodName);
 
@@ -157,7 +157,31 @@ public class ServletManager {
         dispatcher.forward(request,response);
     }
 
-    
+    public static String [] getParameterName(Method method){
+        Paranamer paranamer = new AdaptiveParanamer();
+        String [] parameterName = paranamer.lookupParameterNames(method);
+        return  parameterName;
+    }
+
+    public static Object prepareObject (String name, Object object, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        Field[] attributs = object.getClass().getDeclaredFields();
+        ValidationManager checker = new ValidationManager();
+        for (Field attribut : attributs){
+            
+            String method_name = "set" + Utils.toUpperCase(attribut.getName());
+            Method method = object.getClass().getDeclaredMethod(method_name, attribut.getType());
+            String input_name = name + ":" + attribut.getName();
+            String value = request.getParameter(input_name); 
+
+            if(value != null){
+                if (checker.isValid(attribut, value)) {
+                    method.invoke(object, Utils.castValue(value, attribut.getType()));
+                }
+            }
+        }
+        return object;
+    }
+
     public static void returnJson(Object obj, Method method, HttpServletResponse response) throws Exception {
         PrintWriter out = response.getWriter();
         Gson gson = new Gson();
@@ -176,43 +200,7 @@ public class ServletManager {
         }
     }
 
-    public static void executeMethod (String packageCtrl, Mapping map, VerbAction verbAction, HttpServletRequest request, HttpServletResponse response) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException , Exception {
-        PrintWriter out = response.getWriter();
-        
-        Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
-        Method method = Utils.getMethodAnnoted(clazz, verbAction.getMethod());
-        Object object = clazz.newInstance();
-        addSession(object, request);
-        
-        
-        List<Object> methodParameters = new ArrayList<>();
-
-        if (method.getParameters().length > 0) {
-            methodParameters = preparedParameter(object, method,request,response);
-
-            if (methodParameters.size() != method.getParameters().length) {
-                throw new Exception("Parameters number is insufficient!");
-            }
-        }
-
-        if (method.isAnnotationPresent(RestAPI.class)) {
-            Object obj = method.invoke(object, methodParameters.toArray(new Object[]{}));
-            returnJson(obj, method, response);
-        } else {
-            if (method.getReturnType() == String.class){
-                out.println("Method return : "+ method.invoke(object, methodParameters.toArray(new Object[]{})).toString());
-            }
-            else if (method.getReturnType() == ModelView.class){
-                dispatchModelView((ModelView) method.invoke(object, methodParameters.toArray(new Object[]{})), request, response);
-            }
     
-            else {
-                throw new Exception("The return type of the method " + method.getName() + " in " + clazz.getName() + ".class is invalid!");
-            }
-        }
-    }
-
-
     public static List<Object> preparedParameter(Object obj, Method method, HttpServletRequest request, HttpServletResponse response) throws Exception {
         List<Object> result = new ArrayList<>();
         Parameter [] parameters = method.getParameters();
@@ -231,13 +219,18 @@ public class ServletManager {
                 Session session = new Session(request.getSession());
                 result.add(session);
             }
-            if (Utils.isObject(clazz) && clazz != Session.class){
+            if(clazz == Part.class){
+                result.add(request.getPart(argumentName));
+            }
+            if (Utils.isObject(clazz) && clazz != Session.class && clazz != Part.class){
                 Object o = clazz.newInstance();
-                result.add(prepareObject(argumentName,o,request));
+                result.add(prepareObject(argumentName, o, request, response));
             }
             if (!Utils.isObject(clazz)) {
+                
                 if(request.getParameter(argumentName)!=null){
                     result.add(Utils.castValue(request.getParameter(argumentName),parameters[i].getType()));
+                
                 }
             }
         }
@@ -245,23 +238,40 @@ public class ServletManager {
         return result;
     }
 
-    public static String [] getParameterName(Method method){
-        Paranamer paranamer = new AdaptiveParanamer();
-        String [] parameterName = paranamer.lookupParameterNames(method);
-        return  parameterName;
-    }
+    public static void executeMethod (String packageCtrl, Mapping map, VerbAction verbAction, HttpServletRequest request, HttpServletResponse response) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException , Exception {
+        PrintWriter out = response.getWriter();
+        
+        Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
+        Method method = Utils.getMethodAnnoted(clazz, verbAction.getMethod());
+        Object object = clazz.newInstance();
+        addSession(object, request);
+        
+        List<Object> methodParameters = new ArrayList<>();
+        
+        if (method.getParameters().length > 0) {
+            methodParameters = preparedParameter(object, method,request, response);
 
-    public static Object prepareObject (String name, Object obj, HttpServletRequest request) throws Exception {
-        Field[] attributs = obj.getClass().getDeclaredFields();
-        for (Field attr : attributs){
-            String method_name = "set"+Utils.toUpperCase(attr.getName());
-            Method method = obj.getClass().getDeclaredMethod(method_name,attr.getType());
-            String input_name = name+":"+attr.getName();
-            if(request.getParameter(input_name)!=null){
-                method.invoke(obj,Utils.castValue(request.getParameter(input_name),attr.getType()));
+            if (methodParameters.size() != method.getParameters().length) {
+                throw new Exception("Parameters number is insufficient!");
             }
         }
-        return obj;
+
+        if (method.isAnnotationPresent(RestAPI.class)) {
+            Object obj = method.invoke(object, methodParameters.toArray(new Object[]{}));
+            returnJson(obj, method, response);
+
+        } else {
+            if (method.getReturnType() == String.class){
+                out.println("Method return : "+ method.invoke(object, methodParameters.toArray(new Object[]{})).toString());
+            }
+            else if (method.getReturnType() == ModelView.class){
+                dispatchModelView((ModelView) method.invoke(object, methodParameters.toArray(new Object[]{})), request, response);
+            }
+            else {
+                throw new Exception("The return type of the method " + method.getName() + " in " + clazz.getName() + ".class is invalid!");
+            }
+
+        }
     }
 
 }
