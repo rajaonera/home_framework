@@ -1,6 +1,7 @@
 package mg.framework.controller;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,6 +16,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+@MultipartConfig
 public class FrontController  extends HttpServlet{
     private ArrayList<Class<?>> classController = new ArrayList<>();
     private HashMap<String,Mapping> controllerAndMethod = new HashMap<>(); 
@@ -79,12 +81,9 @@ public class FrontController  extends HttpServlet{
     }
 
     public void processExecuteMethod(String url, String packageCtrl, HttpServletRequest request, HttpServletResponse response, String verb) throws IOException, ServletException, Exception{
-        PrintWriter out = response.getWriter();
         Mapping map = ServletManager.getUrl(this.getControllerAndMethod(), url);
         VerbAction verbAction = Utils.checkUrlMethod(map, verb);
         if (verbAction != null) {
-            out.println("Controller Name : " + map.getClassName());
-            out.println("Method Name : " + verbAction.getMethod());
             ServletManager.executeMethod(packageCtrl, map, verbAction,request, response);
         } else {
             throw new VerbException();
