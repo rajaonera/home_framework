@@ -166,18 +166,33 @@ public class ServletManager {
     public static Object prepareObject (String name, Object object, HttpServletRequest request, HttpServletResponse response) throws Exception {
         Field[] attributs = object.getClass().getDeclaredFields();
         ValidationManager checker = new ValidationManager();
+        boolean isErrorPresent = false;
+
         for (Field attribut : attributs){
             
-            String method_name = "set" + Utils.toUpperCase(attribut.getName());
+            String attribut_name = attribut.getName();
+            String method_name = "set" + Utils.toUpperCase(attribut_name);
             Method method = object.getClass().getDeclaredMethod(method_name, attribut.getType());
-            String input_name = name + ":" + attribut.getName();
+            String input_name = name + ":" + attribut_name;
             String value = request.getParameter(input_name); 
 
             if(value != null){
-                if (checker.isValid(attribut, value)) {
+                String error = checker.isFieldValid(attribut, value);
+                if (error == null) {
                     method.invoke(object, Utils.castValue(value, attribut.getType()));
+                    String key = "value_" + attribut_name;
+                    request.setAttribute(key, value);
+                } else {
+                    String key = "error_" + attribut_name;
+                    request.setAttribute(key, error);
+                    isErrorPresent = true;
                 }
             }
+        }
+
+        if (isErrorPresent) {
+            String page = checker.getPreviousPage(request);
+            request.getRequestDispatcher("/"+page+"?previous_page="+page).forward(request, response);
         }
         return object;
     }

@@ -39,7 +39,7 @@ public class FrontController  extends HttpServlet{
 
     public void initController() {
         try {
-            String packageCtrl = this.getInitParameter("packageName");
+            String packageCtrl = this.getInitParameter("package_name");
             this.setClassController(ServletManager.getControllerClasses(packageCtrl));
         } catch (Exception e) {
             e.printStackTrace();
@@ -92,7 +92,7 @@ public class FrontController  extends HttpServlet{
 
     public void processRequest(HttpServletRequest request, HttpServletResponse response, String verb) throws IOException, ServletException{
         PrintWriter out = response.getWriter();
-        String packageCtrl = this.getInitParameter("packageName");
+        String packageCtrl = this.getInitParameter("package_name");
         String url =  request.getRequestURI();
         out.println("URL : " + url);
 
