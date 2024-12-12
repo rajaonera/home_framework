@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 @MultipartConfig
-public class FrontController  extends HttpServlet{
+public class FrontController extends HttpServlet{
     private ArrayList<Class<?>> classController = new ArrayList<>();
     private HashMap<String,Mapping> controllerAndMethod = new HashMap<>(); 
 
@@ -29,7 +29,7 @@ public class FrontController  extends HttpServlet{
     }
     public HashMap<String, Mapping> getControllerAndMethod() {
         return controllerAndMethod;
-    }
+    }       
     public void setControllerAndMethod(HashMap<String, Mapping> controllerAndMethod) {
         this.controllerAndMethod = controllerAndMethod;
     }
@@ -38,18 +38,20 @@ public class FrontController  extends HttpServlet{
     }
 
     public void initController() {
+        ServletManager manager = new ServletManager();
         try {
-            String packageCtrl = this.getInitParameter("packageName");
-            this.setClassController(ServletManager.getControllerClasses(packageCtrl));
+            String packageCtrl = this.getInitParameter("package_name");
+            this.setClassController(manager.getControllerClasses(packageCtrl));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void init() throws ServletException{
+        ServletManager manager = new ServletManager();
         this.initController();
         try {
-            HashMap<String,Mapping> map = ServletManager.getControllerMethod(this.getClassController());
+            HashMap<String,Mapping> map = manager.getControllerMethod(this.getClassController());
             
             if (map != null) {
                 this.setControllerAndMethod(map);
@@ -73,7 +75,7 @@ public class FrontController  extends HttpServlet{
 
     public void showControllerAndMethod(PrintWriter out, String url) throws Exception{
         try {
-            Mapping map = ServletManager.getUrl(this.getControllerAndMethod(), url);
+            Mapping map = new Mapping().getUrl(this.getControllerAndMethod(), url);
             out.println("Controller Name : " + map.getClassName());
         } catch (Exception e) {
             out.println("Error : " + e.getMessage());
@@ -81,10 +83,10 @@ public class FrontController  extends HttpServlet{
     }
 
     public void processExecuteMethod(String url, String packageCtrl, HttpServletRequest request, HttpServletResponse response, String verb) throws IOException, ServletException, Exception{
-        Mapping map = ServletManager.getUrl(this.getControllerAndMethod(), url);
+        Mapping map = new Mapping().getUrl(this.getControllerAndMethod(), url);
         VerbAction verbAction = Utils.checkUrlMethod(map, verb);
         if (verbAction != null) {
-            ServletManager.executeMethod(packageCtrl, map, verbAction,request, response);
+            new ServletManager().executeMethod(packageCtrl, map, verbAction,request, response);
         } else {
             throw new VerbException();
         }
@@ -92,10 +94,8 @@ public class FrontController  extends HttpServlet{
 
     public void processRequest(HttpServletRequest request, HttpServletResponse response, String verb) throws IOException, ServletException{
         PrintWriter out = response.getWriter();
-        String packageCtrl = this.getInitParameter("packageName");
+        String packageCtrl = this.getInitParameter("package_name");
         String url =  request.getRequestURI();
-        out.println("URL : " + url);
-
         try {
             this.processExecuteMethod(url, packageCtrl, request, response, verb);
         } catch (Exception e) {
