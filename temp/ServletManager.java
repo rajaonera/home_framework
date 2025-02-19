@@ -189,12 +189,12 @@ public class ServletManager {
             }
             if (Utils.isObject(clazz) && clazz != Session.class && clazz != Part.class){
                 Annotation class_annotation = clazz.getAnnotation(Authentication.class);
-                // if (new AuthenticationManager().isHabilitate(class_annotation, request)) {
+                if (new AuthenticationManager().isHabilitate(class_annotation, request)) {
                     Object o = clazz.newInstance();
                     result.add(this.prepareObject(argumentName, o, request, response));
-                // } else{
-                //     throw new AuthenticationException("the " + clazz.getName() + " class");
-                // }
+                } else{
+                    throw new AuthenticationException("the " + clazz.getName() + " class");
+                }
             }
             if (!Utils.isObject(clazz)) {
                 
@@ -213,7 +213,7 @@ public class ServletManager {
         
         Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
         Annotation class_anotation = clazz.getAnnotation(Authentication.class);
-        // if (new AuthenticationManager().isHabilitate(class_anotation, request)) {
+        if (new AuthenticationManager().isHabilitate(class_anotation, request)) {
 
             Method method = Utils.getMethodAnnoted(clazz, verbAction.getMethod());
             Annotation method_annotation = method.getAnnotation(Authentication.class);
@@ -251,8 +251,8 @@ public class ServletManager {
                 throw new AuthenticationException("the "+ method.getName() +" method of the controller " + clazz.getName()+" class");
             }
 
-        // } else {
-        //     throw new AuthenticationException("the controller " + clazz.getName() + " class");
-        // }        
+        } else {
+            throw new AuthenticationException("the controller " + clazz.getName() + " class");
+        }        
     }
 }
