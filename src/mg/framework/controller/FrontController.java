@@ -6,8 +6,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import mg.framework.exception.VerbException;
-import mg.framework.models.Mapping;
-import mg.framework.utils.ServletManager;
+import mg.framework.servlet.Mapping;
+import mg.framework.manager.ServletManager;
 import mg.framework.utils.Utils;
 import mg.framework.utils.VerbAction;
 import mg.framework.exception.Error;
@@ -101,6 +101,7 @@ public class FrontController extends HttpServlet{
         } catch (Exception e) {
             response.setContentType("text/html");
             out.println(Error.getError(e.getMessage()));
+            e.printStackTrace();
         }
     }
 

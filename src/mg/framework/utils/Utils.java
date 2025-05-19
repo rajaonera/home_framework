@@ -7,11 +7,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.sql.Date;
 
-import mg.framework.annotations.Get;
-import mg.framework.annotations.Post;
-import mg.framework.annotations.Url;
+import mg.framework.annotations.servlet.Get;
+import mg.framework.annotations.servlet.Post;
+import mg.framework.annotations.servlet.Url;
 import mg.framework.exception.CastException;
-import mg.framework.models.Mapping;
+import mg.framework.servlet.Mapping;
 
 public class Utils {
     public static String getFileName(String fileName, String extension) {

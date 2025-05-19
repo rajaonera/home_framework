@@ -6,7 +6,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Objects;
 
-import mg.framework.annotations.Controller;
+import mg.framework.annotations.servlet.Controller;
 
 public class CheckController {
 

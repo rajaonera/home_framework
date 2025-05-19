@@ -1,8 +1,8 @@
-package mg.framework.models;
+package mg.framework.servlet;
 
 
 import jakarta.servlet.http.HttpServletRequest;
-import mg.framework.utils.ValidationManager;
+import mg.framework.manager.ValidationManager;
 
 public class Validation {
     public static String error (String field_name, HttpServletRequest request){

@@ -1,9 +1,9 @@
-package mg.framework.utils;
+package mg.framework.manager;
 
 import java.lang.annotation.Annotation;
 
 import jakarta.servlet.http.HttpServletRequest;
-import mg.framework.annotations.Authentication;
+import mg.framework.annotations.auth.Authentication;
 
 public class AuthenticationManager {
     public boolean isHabilitate(Annotation annotation, HttpServletRequest request) {

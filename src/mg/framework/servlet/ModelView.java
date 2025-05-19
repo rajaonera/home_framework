@@ -1,4 +1,4 @@
-package mg.framework.models;
+package mg.framework.servlet;
 
 import java.io.IOException;
 import java.util.HashMap;
