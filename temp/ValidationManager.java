@@ -1,12 +1,13 @@
-package mg.framework.utils;
+package mg.framework.manager;
 
 import java.lang.reflect.Field;
 
 import jakarta.servlet.http.HttpServletRequest;
-import mg.framework.annotations.Date;
-import mg.framework.annotations.Mail;
-import mg.framework.annotations.Numeric;
-import mg.framework.annotations.Required;
+import mg.framework.annotations.validation.Date;
+import mg.framework.annotations.validation.Mail;
+import mg.framework.annotations.validation.Numeric;
+import mg.framework.annotations.validation.Required;
+import mg.framework.utils.Utils;
 
 public class ValidationManager {
 

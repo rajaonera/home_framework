@@ -1,8 +1,9 @@
-package mg.framework.annotations;
+package mg.framework.annotations.auth;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Controller {
+public @interface Authentication {
+    int level() default 0;
 }

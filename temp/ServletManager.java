@@ -1,4 +1,4 @@
-package mg.framework.utils;
+package mg.framework.manager;
 
 import java.lang.annotation.Annotation;
 import java.io.PrintWriter;
@@ -16,18 +16,22 @@ import java.lang.reflect.Field;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
-import mg.framework.annotations.Authentication;
-import mg.framework.annotations.Controller;
-import mg.framework.annotations.Url;
-import mg.framework.annotations.RequestParam;
-import mg.framework.annotations.RestAPI;
+import mg.framework.annotations.auth.Authentication;
+import mg.framework.annotations.servlet.BaseUrl;
+import mg.framework.annotations.servlet.Controller;
+import mg.framework.annotations.servlet.Url;
+import mg.framework.annotations.servlet.RequestParam;
+import mg.framework.annotations.servlet.RestAPI;
 import mg.framework.exception.AuthenticationException;
 import mg.framework.exception.DuplicateException;
 import mg.framework.exception.PackageException;
 import mg.framework.exception.ReturnException;
-import mg.framework.models.Mapping;
-import mg.framework.models.ModelView;
-import mg.framework.models.Session;
+import mg.framework.servlet.Mapping;
+import mg.framework.servlet.ModelView;
+import mg.framework.servlet.Redirect;
+import mg.framework.servlet.Session;
+import mg.framework.utils.Utils;
+import mg.framework.utils.VerbAction;
 
 @SuppressWarnings("deprecation")
 public class ServletManager {
@@ -46,29 +50,57 @@ public class ServletManager {
         return result;
     }
 
+    public void processMapping(Mapping map, HashMap<String,Mapping> result, String url, Class<?> classe, Method method, String verb) throws Exception {
+        if (map == null) {
+            Mapping mapping = new Mapping(classe.getSimpleName());
+            mapping.addVerbAction(new VerbAction(method.getName(), verb));
+            result.put(url, mapping);
+        } else {
+            VerbAction verbAction = new VerbAction(method.getName(), verb);
+            if (!Utils.isVerbExistInMapping(map, verbAction)) {
+                map.addVerbAction(verbAction);
+            } else {
+                throw new DuplicateException();
+            }
+        }
+    }
+
     public HashMap<String,Mapping> getControllerMethod(ArrayList<Class<?>> classes) throws Exception {
         HashMap<String,Mapping> result = new HashMap<>();
         if (classes != null) {
             for(Class<?> classe : classes) {
-                ArrayList<Method> methods = Utils.getListMethod(classe);
-                for (Method method : methods) {
-                    if (method.isAnnotationPresent(Url.class)) {
-                        String verb = Utils.getVerb(method);
+                if (classe.isAnnotationPresent(BaseUrl.class)) {
+                    String base_url = ((BaseUrl) classe.getAnnotation(BaseUrl.class)).value();
+                    
+                    ArrayList<Method> methods = Utils.getListMethod(classe);
+                    for (Method method : methods) {
+                        if (method.isAnnotationPresent(Url.class)) {
+                            String verb = Utils.getVerb(method);
 
-                        String url = ((Url) method.getAnnotation(Url.class)).value();
-                        Mapping map = result.get(url);
-                        
-                        if (map == null) {
-                            Mapping mapping = new Mapping(classe.getSimpleName());
-                            mapping.addVerbAction(new VerbAction(method.getName(), verb));
-                            result.put(url, mapping);
-                        } else {
-                            VerbAction verbAction = new VerbAction(method.getName(), verb);
-                            if (!Utils.isVerbExistInMapping(map, verbAction)) {
-                                map.addVerbAction(verbAction);
+                            String url = ((Url) method.getAnnotation(Url.class)).value();
+                            if (url.isEmpty() || url.equals("/")) {
+                                String url_mapping = base_url;
+                                Mapping map = result.get(url_mapping);
+                                
+                                processMapping(map, result, url_mapping, classe, method, verb);
                             } else {
-                                throw new DuplicateException();
+                                String url_mapping = base_url+"/"+url;
+                                Mapping map = result.get(url_mapping);
+                                
+                                processMapping(map, result, url_mapping, classe, method, verb);
                             }
+                        }
+                    }
+                } else {
+                    ArrayList<Method> methods = Utils.getListMethod(classe);
+                    for (Method method : methods) {
+                        if (method.isAnnotationPresent(Url.class)) {
+                            String verb = Utils.getVerb(method);
+
+                            String url = ((Url) method.getAnnotation(Url.class)).value();
+                            Mapping map = result.get(url);
+                        
+                            processMapping(map, result, url, classe, method, verb);
                         }
                     }
                 }
@@ -210,6 +242,7 @@ public class ServletManager {
     public void executeMethod (String packageCtrl, Mapping map, VerbAction verbAction, HttpServletRequest request, HttpServletResponse response) throws Exception {
         PrintWriter out = response.getWriter();
         ModelView model = new ModelView();
+        Redirect redirect = new Redirect();
         
         Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
         Annotation class_anotation = clazz.getAnnotation(Authentication.class);
@@ -242,8 +275,11 @@ public class ServletManager {
                     else if (method.getReturnType() == ModelView.class){
                         model.dispatchModelView((ModelView) method.invoke(object, methodParameters.toArray(new Object[]{})), request, response);
                     }
+                    else if (method.getReturnType() == Redirect.class) {
+                        redirect.sendRedirect((Redirect) method.invoke(object, methodParameters.toArray(new Object[]{})), request, response);
+                    }
                     else {
-                        throw new Exception("The return type of the method " + method.getName() + " in " + clazz.getName() + " class is invalid!");
+                        throw new ReturnException(method.getName(), clazz.getName());
                     }
                 }
 

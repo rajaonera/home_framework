@@ -1,4 +1,4 @@
-package mg.framework.models;
+package mg.framework.servlet;
 
 
 import jakarta.servlet.http.HttpServletRequest;
